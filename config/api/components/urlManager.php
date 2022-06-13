@@ -29,6 +29,7 @@ return [
             'pluralize' => false,
             'extraPatterns' => [
                 'GET index' => 'index',
+                'POST send-cer-key' => 'send-cer-key'
             ]
         ]
     ]
