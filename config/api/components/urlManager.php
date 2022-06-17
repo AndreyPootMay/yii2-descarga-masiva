@@ -29,7 +29,9 @@ return [
             'pluralize' => false,
             'extraPatterns' => [
                 'GET index' => 'index',
-                'POST send-cer-key' => 'send-cer-key'
+                'POST send-cer-key' => 'send-cer-key',
+                'POST make-query' => 'make-query',
+                'POST download-packages' => 'download-packages'
             ]
         ]
     ]

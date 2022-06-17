@@ -14,30 +14,29 @@ use PhpCfdi\SatWsDescargaMasiva\Shared\ServiceEndpoints;
 use PhpCfdi\SatWsDescargaMasiva\WebClient\GuzzleWebClient;
 use Yii;
 
-class SatWsServiceHelper
+final class SatWsServiceHelper
 {
     public function createService(string $rfc, string $password, bool $retenciones)
     {
-        // $rfc = Rfc::parse($rfc)->getRfc();
+        $rfc = Rfc::parse($rfc)->getRfc();
 
-        // $contentCer = Storage::get($this->obtainCertificatePath($rfc));
-        // $contentKey = Storage::get($this->obtainPrivateKeyPath($rfc));
+        $contentCer = file_get_contents($this->obtainCertificatePath($rfc));
+        $contentKey = file_get_contents($this->obtainPrivateKeyPath($rfc));
 
-        // $fiel = $this->createFiel($contentCer, $contentKey, $password);
+        $fiel = $this->createFiel($contentCer, $contentKey, $password);
 
-        // $webClient = new GuzzleWebClient();
-        // $requestBuilder = new FielRequestBuilder($fiel);
-        // $endpoints = ! $retenciones ? ServiceEndpoints::cfdi() : ServiceEndpoints::retenciones();
+        $webClient = new GuzzleWebClient();
+        $requestBuilder = new FielRequestBuilder($fiel);
+        $endpoints = ! $retenciones ? ServiceEndpoints::cfdi() : ServiceEndpoints::retenciones();
 
-        // return new Service($requestBuilder, $webClient, null, $endpoints);
+        return new Service($requestBuilder, $webClient, null, $endpoints);
     }
 
     public function createFiel(string $contentCer, string $contentKey, string $password): Fiel
     {
         $fiel = Fiel::create($contentCer, $contentKey, $password);
 
-        // verificar que la FIEL sea válida (no sea CSD y sea vigente acorde a la fecha del sistema)
-        if (! $fiel->isValid()) {
+        if (!$fiel->isValid()) {
             throw new Exception('La FIEL no es valida');
         }
 
@@ -66,12 +65,18 @@ class SatWsServiceHelper
         if ($packageId !== '') {
             $packageId .= '.zip';
         }
-        return 'datos/' . $rfc . '/packages/' . $packageId;
+
+        if (!file_exists(Yii::getAlias('@docs/') . $rfc . '/packages/' . $packageId)) {
+            mkdir(Yii::getAlias('@docs/') . $rfc . '/packages/' . $packageId);
+        }
+
+        return Yii::getAlias('@docs/') . $rfc . '/packages/' . $packageId;
     }
 
     public function storePackage(string $rfc, string $packageId, DownloadResult $package): void
     {
         $path = $this->obtainPackagePath($rfc, $packageId);
-        // Storage::put($path, $package->getPackageContent());
+
+        file_put_contents($path, $package->getPackageContent());
     }
 }

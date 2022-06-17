@@ -5,6 +5,16 @@ declare(strict_types=1);
 namespace api\modules\v1\controllers;
 
 use api\modules\v1\helpers\SatWsServiceHelper;
+use PhpCfdi\SatWsDescargaMasiva\Service;
+use PhpCfdi\SatWsDescargaMasiva\RequestBuilder\RequestBuilderInterface;
+use PhpCfdi\SatWsDescargaMasiva\WebClient\WebClientInterface;
+use PhpCfdi\SatWsDescargaMasiva\Services\Download\DownloadResult;
+use PhpCfdi\SatWsDescargaMasiva\Services\Query\QueryParameters;
+use PhpCfdi\SatWsDescargaMasiva\Shared\DateTimePeriod;
+use PhpCfdi\SatWsDescargaMasiva\Shared\DownloadType;
+use PhpCfdi\SatWsDescargaMasiva\Shared\RequestType;
+use PhpCfdi\SatWsDescargaMasiva\WebClient\GuzzleWebClient;
+use PhpCfdi\SatWsDescargaMasiva\WebClient\Request;
 use sizeg\jwt\JwtHttpBearerAuth;
 use Yii;
 use yii\rest\Controller;
@@ -29,18 +39,10 @@ final class DescargaMasivaController extends Controller
         return $behaviors;
     }
 
-    public function actionIndex()
-    {
-        dd("welcome to the index");
-    }
-
     public function actionSendCerKey()
     {
         $cer = UploadedFile::getInstanceByName('cer');
         $key = UploadedFile::getInstanceByName('key');
-
-        $cerFileName = $cer->name;
-        $keyFileName = $key->name;
 
         $satWsService = new SatWsServiceHelper();
         try {
@@ -68,5 +70,90 @@ final class DescargaMasivaController extends Controller
             'pathCer' => $certificatePath,
             'pathKey' => $privateKeyPath,
         ]);
+    }
+
+    public function actionMakeQuery()
+    {
+        try {
+            $post = Yii::$app->request->post();
+
+            $period = DateTimePeriod::createFromValues(
+                $post['period']['start'],
+                $post['period']['end']
+            );
+
+            $downloadType = $post['downloadType'] === 'issued'
+                ? DownloadType::issued() : DownloadType::received();
+            $requestType = $post['requestType'] === 'xml'
+                ? RequestType::xml() : RequestType::metadata();
+
+            $queryParameters = QueryParameters::create(
+                $period,
+                $downloadType,
+                $requestType,
+                $post['rfcMatch']
+            );
+            $satWsServiceHelper = new SatWsServiceHelper();
+            $service = $satWsServiceHelper->createService(
+                $post['rfc'],
+                $post['password'],
+                (bool) $post['retenciones']
+            );
+
+            $query = $service->query($queryParameters);
+
+            if (!$query->getStatus()->isAccepted()) {
+                return $this->asJson($query->getStatus(), 400);
+            }
+
+            return $this->asJson([
+                $query->getStatus(), 'requestId' => $query->getRequestId()
+            ], 200);
+        } catch (\Exception $exception) {
+            return $this->asJson(['message' => $exception->getMessage()], 422);
+        }
+    }
+
+    public function actionDownloadPackages()
+    {
+        $postFields = Yii::$app->request->post();
+        $packagesIds = $postFields['packagesIds'];
+        $rfc = $postFields['rfc'];
+        $satWsServiceHelper = new SatWsServiceHelper();
+
+        $service = $satWsServiceHelper->createService(
+            $postFields['rfc'],
+            $postFields['password'],
+            $postFields['retenciones']
+        );
+
+
+        $messages = [];
+        $errorMessages = [];
+        foreach ($packagesIds as $packageId) {
+            $download = $this->download($service, $packageId);
+            if (!$download->getStatus()->isAccepted()) {
+                $errorMessages[] = sprintf(
+                    'El paquete %s no se ha podido descargar: %s',
+                    $packageId,
+                    $download->getStatus()->getMessage()
+                );
+                continue;
+            }
+            $satWsServiceHelper->storePackage($rfc, $packageId, $download);
+            $messages[] = "El paquete {$packageId} se ha almacenado";
+        }
+        return $this->asJson(['errorMessages' => $errorMessages, 'messages' => $messages]);
+    }
+
+    /**
+     * @param Service $service
+     * @param string $packageId
+     *
+     * @return DownloadResult
+     */
+    protected function download(Service $service, string $packageId): DownloadResult
+    {
+        return $service->download($packageId);
     }
 }
