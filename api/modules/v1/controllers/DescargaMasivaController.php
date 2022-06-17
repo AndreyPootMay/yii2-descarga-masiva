@@ -85,7 +85,7 @@ final class DescargaMasivaController extends Controller
             $downloadType = $post['downloadType'] === 'issued'
                 ? DownloadType::issued() : DownloadType::received();
             $requestType = $post['requestType'] === 'xml'
-                ? RequestType::xml() : RequestType::metadata();
+                ? RequestType::cfdi() : RequestType::metadata();
 
             $queryParameters = QueryParameters::create(
                 $period,
