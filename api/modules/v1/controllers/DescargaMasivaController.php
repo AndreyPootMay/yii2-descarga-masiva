@@ -6,21 +6,17 @@ namespace api\modules\v1\controllers;
 
 use api\modules\v1\helpers\SatWsServiceHelper;
 use PhpCfdi\SatWsDescargaMasiva\Service;
-use PhpCfdi\SatWsDescargaMasiva\RequestBuilder\RequestBuilderInterface;
-use PhpCfdi\SatWsDescargaMasiva\WebClient\WebClientInterface;
 use PhpCfdi\SatWsDescargaMasiva\Services\Download\DownloadResult;
 use PhpCfdi\SatWsDescargaMasiva\Services\Query\QueryParameters;
 use PhpCfdi\SatWsDescargaMasiva\Shared\DateTimePeriod;
 use PhpCfdi\SatWsDescargaMasiva\Shared\DownloadType;
 use PhpCfdi\SatWsDescargaMasiva\Shared\RequestType;
-use PhpCfdi\SatWsDescargaMasiva\WebClient\GuzzleWebClient;
-use PhpCfdi\SatWsDescargaMasiva\WebClient\Request;
 use sizeg\jwt\JwtHttpBearerAuth;
 use Yii;
 use yii\rest\Controller;
 use yii\web\UploadedFile;
 
-final class DescargaMasivaController extends Controller
+class DescargaMasivaController extends Controller
 {
     /** @inheritdoc */
     public function behaviors()

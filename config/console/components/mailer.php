@@ -27,8 +27,8 @@ return [
     'transport' => [
         'class' => 'Swift_SmtpTransport',
         'host' => Configuration::env()->get('APP_EMAIL_HOST'),
-        'username' => Configuration::env()->get('APP_ADMIN_USERNAME'),
-        'password' => Configuration::env()->get('APP_ADMIN_PASS'),
+        'username' => Configuration::env()->get('APP_SISTEMAS_USERNAME'),
+        'password' => Configuration::env()->get('APP_SISTEMAS_PASS'),
         'port' => Configuration::env()->get('APP_EMAIL_PORT'),
         'encryption' => Configuration::env()->get('APP_EMAIL_ENC'),
     ],

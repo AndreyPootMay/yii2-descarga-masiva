@@ -132,6 +132,9 @@
         "preferred-install": {
             "sidekit/*": "source",
             "*": "auto"
+        },
+        "allow-plugins": {
+            "yiisoft/yii2-composer": true
         }
     }
 }
